@@ -40,7 +40,7 @@ And the wave form looks like this (Normalized in Audacity):
 
 The rest of the channels (1 to 64) are all normal audio channels.
 In order to convert the samples transported on the network to samples that are working in a PCM wave file I had to change the byte order around a bit using this C function:
-```
+```c++
 uint32_t switchByteOrder24(uint32_t src)
 {
 	// Switch byte 0 and 2
