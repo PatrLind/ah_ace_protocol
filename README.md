@@ -55,7 +55,7 @@ The last 26 bytes of data I have not yet tried to analyze fully but the first by
 The protocol is designed a point to point protocol and only two devices will be able to talk to each other. The devices are always sending packets thru the network even if there is no data to transfer. In that case the packets will contain only zeroes. The data rate transferred amounts to about 48000 * 221 = 81 Mibit/s. If you include the header data the total rate amounts to about 90 Mibit/s. This is in both directions so about 181 Mibit/s if you want to capture all traffic. The wire speed is fixed to 100 Mibit/s.
 
 ## Channel numbers
-The mixer channel number and ACE stream channel order numbers are not the same thing. If all inputs are mapped straight to the ACE port then they will be spaced 8 channels apart like this>
+The mixer channel number and ACE stream channel order numbers are not the same thing. If all inputs are mapped straight to the ACE port then they will be spaced 8 channels apart like this:
 * Channel  1 to ACE  1
 * Channel  2 to ACE  9 
 * Channel  3 to ACE 17 
