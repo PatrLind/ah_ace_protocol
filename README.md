@@ -14,6 +14,7 @@ The connector is an etherCON RJ45 connector from Neutrik that allows for a secur
 Allen & Heath claims that, unlike a normal Ethernet connection, the ACE connection can run thru cables that are up to 120m in length. Normally this is limited to 100m. I’m guessing that the can get this number because they know exactly what transceivers and chipsets they are using and have done extensive tests in order to determine that their particular setup can handle cable lengths of up to 120m. I have however read about people that have had problems, so maybe it is best to limit the length to 100m just to be on the safe side.
 
 ## ACE protocol
+![Channel 0 Wireshark data](https://github.com/Ramzeus/ah_ace_protocol/blob/master/images/sample_packet_wireshark.png "Annotated data from Wireshark")
 The ACE protocol is not based on “normal” IP communication but is instead just simple RAW Ethernet frames. The frames consist of the following data fields (not including preamble and start frame delimiter):
 *	Destination MAC address (6 bytes) – Always ff:ff:ff:ff:ff:ff (Broadcast)
 *	Source MAC address (6 bytes)
