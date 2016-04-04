@@ -3,7 +3,9 @@ WORK IN PROGRESS!!!
 # Allen & Heath ACE network protocol information
 ACE stands for *Audio Control over Ethernet* and is a proprietary protocol made by Allen & Heath Limited in the UK.
 
-I wanted to understand more about how this protocol worked so I tried to capture some data of the link between the mix rack and the mix surface. I present my findings here in case someone else might find this useful. If you have more information than I have found, please feel free to help me add it here.
+I wanted to understand more about how this protocol worked so I tried to capture some data of the link between the mixrack and the mix surface. I present my findings here in case someone else might find this useful. If you have more information than I have found or if you find any errors, please feel free tell me.
+
+I don't currently have access to the equipment, but the data I captured was from an iLive iDR-48 mixrack and an iLive-T112 surface.
 
 **NOTE**: Only use the provided information if you are sure you know what you are doing. This information and provided source code is for educational purposes only and should not be used to replace a proper audio recording system (like Dante). I cannot guarantee the quality of the recordings you might get from the audio stream.
 
@@ -25,7 +27,7 @@ The ACE protocol is not based on “normal” IP communication but is instead ju
 *	Then comes 26 bytes of data that is used for control data and also bridged network data.
 
 The total data size is always 221 bytes and the total frame size is either 239 bytes (if a VLAN is used) or 235 bytes (normal packets without VLAN).
-The protocol is very sensitive to other traffic on the network and will not tolerate other packets (from what I can see anyway). While testing I had a switch that had CDP (Cisco Discovery Protocol) activated and that caused glitches in the communication between the surface and the mix rack.
+The protocol is very sensitive to other traffic on the network and will not tolerate other packets (from what I can see anyway). While testing I had a switch that had CDP (Cisco Discovery Protocol) activated and that caused glitches in the communication between the surface and the mixrack.
 
 Packets/frames like this are sent 48000 times/second which also is the audio sampling frequency of the system. The three bytes per audio sample makes up the 24 bit sample rate.
 The first channel (channel 0) is a sync signal (I think) that the system (presumably) uses to keep all devices synchronized. Only the least significant byte contains data, the other two bytes is always zero. The sync packets I have seen are in this byte sequence:
@@ -51,6 +53,12 @@ uint32_t switchByteOrder24(uint32_t src)
 The last 26 bytes of data I have not yet tried to analyze fully but the first byte seems to be a data stream type designator and the other 25 bytes seems to be the data stream. It is in this data stream that the bridged network data is transferred.
 
 The protocol is designed a point to point protocol and only two devices will be able to talk to each other. The devices are always sending packets thru the network even if there is no data to transfer. In that case the packets will contain only zeroes. The data rate transferred amounts to about 48000 * 221 = 81 Mibit/s. If you include the header data the total rate amounts to about 90 Mibit/s. This is in both directions so about 181 Mibit/s if you want to capture all traffic. The wire speed is fixed to 100 Mibit/s.
+
+## Sample software
+TODO
+
+## Problems
+I have had some problems with packet drops and therefore I was missing some of the audio data. I'm still investigating how to best fix this issue.
 
 License
 ----
