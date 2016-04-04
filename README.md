@@ -32,7 +32,7 @@ The first channel (channel 0) is a sync signal (I think) that the system (presum
 
 And the wave form looks like this (Normalized in Audacity):
 
-![Channel 0 sync track](https://github.com/Ramzeus/ah_ace_protocol/images/sync.png "Normalized in Audacity")
+![Channel 0 sync track](https://github.com/Ramzeus/ah_ace_protocol/blob/master/images/sync.png "Normalized in Audacity")
 
 The rest of the channels (1 to 64) are all normal audio channels.
 In order to convert the samples transported on the network to samples that are working in a PCM wave file I had to change the byte order around a bit using this C function:
