@@ -19,8 +19,8 @@ The ACE protocol is not based on “normal” IP communication but is instead ju
 *	Source MAC address (6 bytes)
 *	EtherType field (2 bytes)
 *	Optionally (if a VLAN capable switch is used) also a 802.1Q tag (4 bytes)
-*	65 audio channels (3 bytes each with a total of 195 bytes) ???
-*	Then comes 25 bytes of data (???) that is used for control data and also bridged network data.
+*	65 audio channels (3 bytes each with a total of 195 bytes)
+*	Then comes 26 bytes of data that is used for control data and also bridged network data.
 
 The total data size is always 221 bytes and the total frame size is either 239 bytes (if a VLAN is used) or 235 bytes (normal packets without VLAN).
 The protocol is very sensitive to other traffic on the network and will not tolerate other packets (from what I can see anyway). While testing I had a switch that had CDP (Cisco Discovery Protocol) activated and that caused glitches in the communication between the surface and the mix rack.
@@ -28,18 +28,25 @@ The protocol is very sensitive to other traffic on the network and will not tole
 Packets/frames like this are sent 48000 times/second which also is the audio sampling frequency of the system. The three bytes per audio sample makes up the 24 bit sample rate.
 The first channel (channel 0) is a sync signal (I think) that the system (presumably) uses to keep all devices synchronized. Only the least significant byte contains data, the other two bytes is always zero. The sync packets I have seen are in this byte sequence:
 
-XX, XX, XX, XX…
+0x40, 0x44, 0x48, 0x4C, 0x50, 0x54, 0x58, 0x5C, 0x60, 0x64, 0x68, 0x6C, 0x70, 0x74, 0x78, 0x7C*, 0x40, 0x44, ...*
 
-And the wave form looks like this:
+And the wave form looks like this (Normalized in Audacity):
 
-IMAGE
+![Channel 0 sync track](https://github.com/Ramzeus/ah_ace_protocol/images/sync.png "Normalized in Audacity")
 
 The rest of the channels (1 to 64) are all normal audio channels.
 In order to convert the samples transported on the network to samples that are working in a PCM wave file I had to change the byte order around a bit using this C function:
 ```
-C-Code
+uint32_t switchByteOrder24(uint32_t src)
+{
+	// Switch byte 0 and 2
+	src = (src & 0xff0000) >> 16 | (src & 0x00ff00) | (src & 0x0000ff) << 16;
+	// Switch nibble 0 and 1 in each byte
+	src = (src & 0xf0f0f0) >>  4 | (src & 0x0f0f0f) <<  4;
+	return src;
+}
 ```
-The last 25 (???) bytes of data I have not yet tried to analyze fully but the first byte seems to be a data stream type designator and the other 24 bytes seems to be the data stream. It is in this data stream that the bridged network data is transferred (???).
+The last 26 bytes of data I have not yet tried to analyze fully but the first byte seems to be a data stream type designator and the other 25 bytes seems to be the data stream. It is in this data stream that the bridged network data is transferred.
 
 The protocol is designed a point to point protocol and only two devices will be able to talk to each other. The devices are always sending packets thru the network even if there is no data to transfer. In that case the packets will contain only zeroes. The data rate transferred amounts to about 48000 * 221 = 81 Mibit/s. If you include the header data the total rate amounts to about 90 Mibit/s. This is in both directions so about 181 Mibit/s if you want to capture all traffic. The wire speed is fixed to 100 Mibit/s.
 
