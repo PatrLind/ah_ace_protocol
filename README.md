@@ -3,7 +3,7 @@ WORK IN PROGRESS!!!
 # Allen & Heath ACE network protocol information
 ACE stands for *Audio Control over Ethernet* and is a proprietary protocol made by Allen & Heath Limited in the UK.
 
-I wanted to understand more about how this protocol worked so I tried to capture some data of the link between the mix rack and the mix surface. I present my findings here in case someone else might find this useful. If you have more information that I have found, please feel free to help me add it.
+I wanted to understand more about how this protocol worked so I tried to capture some data of the link between the mix rack and the mix surface. I present my findings here in case someone else might find this useful. If you have more information than I have found, please feel free to help me add it here.
 
 **NOTE**: Only use the provided information if you are sure you know what you are doing. This information and provided source code is for educational purposes only and should not be used to replace a proper audio recording system (like Dante). I cannot guarantee the quality of the recordings you might get from the audio stream.
 
@@ -30,11 +30,11 @@ The first channel (channel 0) is a sync signal (I think) that the system (presum
 
 XX, XX, XX, XX…
 
-And looks like this:
+And the wave form looks like this:
 
 IMAGE
 
-The rest of the channels (1->64) are all normal audio channels.
+The rest of the channels (1 to 64) are all normal audio channels.
 In order to convert the samples transported on the network to samples that are working in a PCM wave file I had to change the byte order around a bit using this C function:
 ```
 C-Code
