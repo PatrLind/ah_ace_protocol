@@ -27,8 +27,13 @@ The ACE protocol is not based on “normal” IP communication but is instead ju
 *	Then comes 26 bytes of data that is used for control data and also bridged network data.
 
 The total data size is always 221 bytes and the total frame size is either 239 bytes (if a VLAN is used) or 235 bytes (normal packets without VLAN).
+Also packet sizes of 237 and maybe 241 exist, with just two bytes of checksum appended at the end. (237 Found on iLive v1.94, intermittent) My current best theory is that they might use the occasional trailer to achieve synchronization, but it does not seem strictly necessary.
+
 The protocol is very sensitive to other traffic on the network and will not tolerate other packets (from what I can see anyway). While testing I had a switch that had CDP (Cisco Discovery Protocol) activated and that caused glitches in the communication between the surface and the mixrack.
 
+The protocol is designed a point to point protocol and only two devices will be able to talk to each other. The devices are always sending packets thru the network even if there is no data to transfer. In that case the packets will contain only zeroes. The data rate transferred amounts to about 48000 * 221 = 81 Mibit/s. If you include the header data the total rate amounts to about 90 Mibit/s. This is in both directions so about 181 Mibit/s if you want to capture all traffic. The wire speed is fixed to 100 Mibit/s.
+
+## Audio
 Packets/frames like this are sent 48000 times/second which also is the audio sampling frequency of the system. The three bytes per audio sample makes up the 24 bit sample rate.
 The first channel (channel 0) is a sync signal (I think) that the system (presumably) uses to keep all devices synchronized. Only the least significant byte contains data, the other two bytes is always zero. The sync packets I have seen are in this byte sequence:
 
@@ -37,6 +42,9 @@ The first channel (channel 0) is a sync signal (I think) that the system (presum
 And the wave form looks like this (Normalized in Audacity):
 
 ![Channel 0 sync track](https://github.com/Ramzeus/ah_ace_protocol/blob/master/images/sync.png "Normalized in Audacity")
+
+This seems like a 6 bit counter starting at the 3rd LSb, with the 2nd MSb set to one as a flag.
+In comparison, some of the other A&H protocols like dSnake use the same 6bit counter, but just in the lowest bits. In general ACE and dSnake are mostly compatible, at least on the audio level. Sync and control are probably slightly different.
 
 The rest of the channels (1 to 64) are all normal audio channels.
 In order to convert the samples transported on the network to samples that are working in a PCM wave file I had to change the byte order around a bit using this C function:
@@ -50,11 +58,8 @@ uint32_t switchByteOrder24(uint32_t src)
 	return src;
 }
 ```
-The last 26 bytes of data I have not yet tried to analyze fully but the first byte seems to be a data stream type designator and the other 25 bytes seems to be the data stream. It is in this data stream that the bridged network data is transferred.
 
-The protocol is designed a point to point protocol and only two devices will be able to talk to each other. The devices are always sending packets thru the network even if there is no data to transfer. In that case the packets will contain only zeroes. The data rate transferred amounts to about 48000 * 221 = 81 Mibit/s. If you include the header data the total rate amounts to about 90 Mibit/s. This is in both directions so about 181 Mibit/s if you want to capture all traffic. The wire speed is fixed to 100 Mibit/s.
-
-## Channel numbers
+### Channel numbers
 The mixer channel number and ACE stream channel order numbers are not the same thing. If all inputs are mapped straight to the ACE port then they will be spaced 8 channels apart like this:
 * Channel  1 to ACE  1
 * Channel  2 to ACE  9 
@@ -68,11 +73,50 @@ The mixer channel number and ACE stream channel order numbers are not the same t
 * Channel 10 to ACE 10 
 * ...
 
+To convert the channel numbers you may use this function:
+```c++
+// Channel 0 meaning sync, therefore the exception
+if(channel == 0) {
+    return 0;
+}
+return (((channel-1)*8)%63)+1;
+```
+
+## Tunneled Network / Control
+The last 26 bytes are a tunneled network connection, for both external connections on the network ports of both surface and mixrack, and also internal control via a different Protocol (called AH-Net on ILive devices).
+The first byte is a control value with the nibbles swapped, and can be decoded like following:
+```c++
+uint8_t switchNibbles(uint8_t src)
+{
+	// Switch nibble 0 and 1
+	src = (src & 0xf0) >>  4 | (src & 0x0f) <<  4;
+	return src;
+}
+```
+The resulting value will be:
+* 0x00 -> No Data will be transmitted, all zeroes
+* 0x59 -> Start of a new ethernet frame
+* 0x80 to 0x99 -> The first bit is always high, the lower 5 bits indicate the number of valid bytes following
+  * 0x99 therefor means all 25 following bytes are valid and there will be more data
+  * 0x80 therefor means all 25 bytes are invalid and zero and the frame has ended
+  * 0x85 therefor means the first 5 following bytes are valid and the frame ends after that.
+
+In bitfield terms that means the two most significant bits are flags. The MSb means the data is of the same frame as the previous packet, the 2nd MSb means the data is the start of a new frame. If both are not set there will be no data following and the last frame is complete.
+And the lower 5 bits are just the number of valid bits of data following.
+
+The other 25 bytes will contain the raw ethernet frames including the standard 8 byte preamble (0x5555555555555559).
+The frames can be reconstructed by appending the 25 byte chunks in order and dropping the padding zeros of the last chunck according to the control byte.
+
+Further work will need to be done on the tunneled protocols, if one wants to understand the control of these systems.
+ACE itself doesn't seem to carry any relevant control data itself.
+
 ## Sample software
 TODO
 
 ## Problems
 I have had some problems with packet drops and therefore I was missing some of the audio data. I'm still investigating how to best fix this issue.
+
+I still have not figured out how they synchronize both devices. Also i still can't figure out why sometimes one or the other device will omit the two bytes of checksum on every fourth packet.
 
 License
 ----
